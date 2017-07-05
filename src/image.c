@@ -4,13 +4,18 @@
 #include "cuda.h"
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include "lo/lo.h"
+
 int windows = 0;
+
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
 
@@ -174,21 +179,36 @@ image **load_alphabet()
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
     int i;
+    // lo_blob btest = lo_blob_new(sizeof(testdata), testdata);
 
+    /* an address to send messages to. sometimes it is better to let the server
+     * pick a port number for you by passing NULL as the last argument */
+//    lo_address t = lo_address_new_from_url( "osc.unix://localhost/tmp/mysocket" );
+    // lo_address t = lo_address_new("127.0.0.1", "7770");
+    lo_address t = lo_address_new("192.168.0.50", "7770");
+    // lo_message m = lo_bundle_new(LO_TT_IMMEDIATE);
+    lo_message m = lo_message_new();
+
+    lo_send(t, "/resolution", "ii", im.w, im.h);
+
+    printf("%d x %d\n", im.w, im.h);
     for(i = 0; i < num; ++i){
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
         if(prob > thresh){
 
-            int width = im.h * .012;
+            // int width = im.h * .012;
 
-            if(0){
-                width = pow(prob, 1./2.)*10+1;
-                alphabet = 0;
-            }
+            // if(0){
+            //     width = pow(prob, 1./2.)*10+1;
+            //     alphabet = 0;
+            // }
 
-            //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
-            printf("%s: %.0f%%\n", names[class], prob*100);
+            printf("%d %s: %.0f%%\n", i, names[class], prob*100);
+            // printf("%s: %.0f%%\n", names[class], prob*100);
+            // char buf[12];
+            // sprintf(buf, "/detect/%d", i);
+            
             int offset = class*123457 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
@@ -206,20 +226,27 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             int right = (b.x+b.w/2.)*im.w;
             int top   = (b.y-b.h/2.)*im.h;
             int bot   = (b.y+b.h/2.)*im.h;
+            
 
-            if(left < 0) left = 0;
-            if(right > im.w-1) right = im.w-1;
-            if(top < 0) top = 0;
-            if(bot > im.h-1) bot = im.h-1;
+            // lo_send(t, "/darknet", "sfiiii", names[class], prob*100, left, right, top, bot);
+            lo_message_add 	(m, "sfiiii", names[class], prob*100, left, right, top, bot);
 
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            if (alphabet) {
-                image label = get_label(alphabet, names[class], (im.h*.03)/10);
-                draw_label(im, top + width, left, label, rgb);
-                free_image(label);
-            }
+            // if(left < 0) left = 0;
+            // if(right > im.w-1) right = im.w-1;
+            // if(top < 0) top = 0;
+            // if(bot > im.h-1) bot = im.h-1;
+
+            // draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            // if (alphabet) {
+            //     image label = get_label(alphabet, names[class], (im.h*.03)/10);
+            //     draw_label(im, top + width, left, label, rgb);
+            //     free_image(label);
+            // }
         }
     }
+    lo_send_message(t,"/darknet",m);
+    lo_address_free(t);
+    lo_message_free (m);
 }
 
 void transpose_image(image im)

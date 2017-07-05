@@ -122,7 +122,7 @@ void *display_in_thread(void *ptr)
 void *display_loop(void *ptr)
 {
     while(1){
-        display_in_thread(0);
+        //display_in_thread(0);
     }
 }
 
@@ -193,7 +193,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     buff_letter[0] = letterbox_image(buff[0], net.w, net.h);
     buff_letter[1] = letterbox_image(buff[0], net.w, net.h);
     buff_letter[2] = letterbox_image(buff[0], net.w, net.h);
-    ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
+    // ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
     int count = 0;
     if(!prefix){
@@ -221,7 +221,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                 last_avg2 = swap;
                 memcpy(last_avg, avg, l.outputs*sizeof(float));
             }
-            display_in_thread(0);
+            //display_in_thread(0);
         }else{
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
