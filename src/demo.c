@@ -7,7 +7,7 @@
 #include "box.h"
 #include "image.h"
 #include "demo.h"
-#include "osc.h"
+#include "communication.h"
 #include <sys/time.h>
 
 #define DEMO 1
@@ -73,13 +73,13 @@ void *detect_in_thread(void *ptr)
     }
     if (nms > 0) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
-    printf("\033[2J");
-    printf("\033[1;1H");
-    printf("\nFPS:%.1f\n",fps);
-    printf("Objects:\n\n");
+    // printf("\033[2J");
+    // printf("\033[1;1H");
+    // printf("\nFPS:%.1f\n",fps);
+    // printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
     // draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
-    osc_send_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+    ws_send_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
@@ -124,7 +124,7 @@ void *display_in_thread(void *ptr)
 void *display_loop(void *ptr)
 {
     while(1){
-        //display_in_thread(0);
+        // display_in_thread(0);
     }
 }
 
@@ -232,6 +232,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
         ++count;
+        
     }
 }
 #else
