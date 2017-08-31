@@ -41,6 +41,8 @@ static float *last_avg2;
 static float *last_avg;
 static float *avg;
 double demo_time;
+CvSize videoSize;
+CvVideoWriter* videoWriter;
 
 double get_wall_time()
 {
@@ -73,10 +75,10 @@ void *detect_in_thread(void *ptr)
     }
     if (nms > 0) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
-    // printf("\033[2J");
-    // printf("\033[1;1H");
-    // printf("\nFPS:%.1f\n",fps);
-    // printf("Objects:\n\n");
+    printf("\033[2J");
+    printf("\033[1;1H");
+    printf("\nFPS:%.1f\n",fps);
+    printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
     // draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
     ws_send_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
@@ -96,35 +98,48 @@ void *fetch_in_thread(void *ptr)
 
 void *display_in_thread(void *ptr)
 {
-    show_image_cv(buff[(buff_index + 1)%3], "Demo", ipl);
-    int c = cvWaitKey(1);
-    if (c != -1) c = c%256;
-    if (c == 10){
-        if(demo_delay == 0) demo_delay = 60;
-        else if(demo_delay == 5) demo_delay = 0;
-        else if(demo_delay == 60) demo_delay = 5;
-        else demo_delay = 0;
-    } else if (c == 27) {
-        demo_done = 1;
-        return 0;
-    } else if (c == 82) {
-        demo_thresh += .02;
-    } else if (c == 84) {
-        demo_thresh -= .02;
-        if(demo_thresh <= .02) demo_thresh = .02;
-    } else if (c == 83) {
-        demo_hier += .02;
-    } else if (c == 81) {
-        demo_hier -= .02;
-        if(demo_hier <= .0) demo_hier = .0;
+    image p = buff[(buff_index + 0)%3];
+    if(p.c == 3) rgbgr_image(p);
+    int x,y,k;
+    int step = ipl->widthStep;
+    for(y = 0; y < p.h; ++y){
+        for(x = 0; x < p.w; ++x){
+            for(k= 0; k < p.c; ++k){
+                ipl->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(p,x,y,k)*255);
+            }
+        }
     }
+    cvWriteFrame(videoWriter,ipl);
+
+    // show_image_cv(buff[(buff_index + 1)%3], "Demo", ipl);
+    // int c = cvWaitKey(1);
+    // if (c != -1) c = c%256;
+    // if (c == 10){
+    //     if(demo_delay == 0) demo_delay = 60;
+    //     else if(demo_delay == 5) demo_delay = 0;
+    //     else if(demo_delay == 60) demo_delay = 5;
+    //     else demo_delay = 0;
+    // } else if (c == 27) {
+    //     demo_done = 1;
+    //     return 0;
+    // } else if (c == 82) {
+    //     demo_thresh += .02;
+    // } else if (c == 84) {
+    //     demo_thresh -= .02;
+    //     if(demo_thresh <= .02) demo_thresh = .02;
+    // } else if (c == 83) {
+    //     demo_hier += .02;
+    // } else if (c == 81) {
+    //     demo_hier -= .02;
+    //     if(demo_hier <= .0) demo_hier = .0;
+    // }
     return 0;
 }
 
 void *display_loop(void *ptr)
 {
     while(1){
-        // display_in_thread(0);
+        display_in_thread(0);
     }
 }
 
@@ -174,6 +189,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
     }
 
+    // videoSize = cvSize(640, 480);
+    
+
     if(!cap) error("Couldn't connect to webcam.\n");
 
     layer l = net.layers[net.n-1];
@@ -195,7 +213,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     buff_letter[0] = letterbox_image(buff[0], net.w, net.h);
     buff_letter[1] = letterbox_image(buff[0], net.w, net.h);
     buff_letter[2] = letterbox_image(buff[0], net.w, net.h);
-    // ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
+    ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
+    unlink ("/home/nvidia/darknet-osc/out.avi");
+    // if(mkfifo("/home/nvidia/darknet-osc/out.avi", 0755) == -1){
+    //     printf("ERROR CREATING NAMED PIPE\n");
+    // };
+    videoWriter = cvCreateVideoWriter("/home/nvidia/darknet-osc/out.avi", CV_FOURCC('M', 'J', 'P', 'G'), 30, cvSize(buff[0].w,buff[0].h), 1 );
 
     int count = 0;
     if(!prefix){
@@ -204,7 +227,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
             // cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         } else {
             // cvMoveWindow("Demo", 0, 0);
-            // cvResizeWindow("Demo", 1352, 1013);
+            // cvResizeWindow("Demo", 1280, 1024);
         }
     }
 
@@ -223,7 +246,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
                 last_avg2 = swap;
                 memcpy(last_avg, avg, l.outputs*sizeof(float));
             }
-            //display_in_thread(0);
+            display_in_thread(0);
+
         }else{
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
