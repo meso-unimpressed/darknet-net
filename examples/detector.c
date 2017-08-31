@@ -8,6 +8,7 @@
 #include "option_list.h"
 #include "blas.h"
 #include "communication.h"
+#include "darknet.h"
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
@@ -31,11 +32,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef GPU
         cuda_set_device(gpus[i]);
 #endif
-        nets[i] = parse_network_cfg(cfgfile);
-        if(weightfile){
-            load_weights(&nets[i], weightfile);
-        }
-        if(clear) *nets[i].seen = 0;
+        nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i].learning_rate *= ngpus;
     }
     srand(time(0));
@@ -54,9 +51,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    load_args args = {0};
-    args.w = net.w;
-    args.h = net.h;
+    load_args args = get_base_args(net);
+    args.coords = l.coords;
     args.paths = paths;
     args.n = imgs;
     args.m = plist->size;
@@ -65,12 +61,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.num_boxes = l.max_boxes;
     args.d = &buffer;
     args.type = DETECTION_DATA;
+    //args.type = INSTANCE_DATA;
     args.threads = 8;
-
-    args.angle = net.angle;
-    args.exposure = net.exposure;
-    args.saturation = net.saturation;
-    args.hue = net.hue;
 
     pthread_t load_thread = load_data(args);
     clock_t time;
@@ -115,7 +107,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             image im = float_to_image(net.w, net.h, 3, train.X.vals[zz]);
             int k;
             for(k = 0; k < l.max_boxes; ++k){
-                box b = float_to_box(train.y.vals[zz] + k*5);
+                box b = float_to_box(train.y.vals[zz] + k*5, 1);
                 printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
                 draw_bbox(im, b, 1, 1,0,0);
             }
@@ -142,8 +134,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);
-        printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-        if(i%1000==0){
+        printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
+        if(i%100==0){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
@@ -355,7 +347,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
             network_predict(net, input.data);
             int w = val[t].w;
             int h = val[t].h;
-            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, map, .5, 0);
+            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, 0, map, .5, 0);
             if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, classes, nms);
             if (coco){
                 print_cocos(fp, path, boxes, probs, l.w*l.h*l.n, classes, w, h);
@@ -486,7 +478,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
             network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, map, .5, 0);
+            get_region_boxes(l, w, h, net.w, net.h, thresh, probs, boxes, 0, 0, map, .5, 0);
             if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, classes, nms);
             if (coco){
                 print_cocos(fp, path, boxes, probs, l.w*l.h*l.n, classes, w, h);
@@ -521,7 +513,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
-    list *plist = get_paths("data/voc.2007.test");
+    list *plist = get_paths("data/coco_val_5k.list");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net.layers[net.n-1];
@@ -550,7 +542,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         image sized = resize_image(orig, net.w, net.h);
         char *id = basecfg(path);
         network_predict(net, sized.data);
-        get_region_boxes(l, sized.w, sized.h, net.w, net.h, thresh, probs, boxes, 1, 0, .5, 1);
+        get_region_boxes(l, sized.w, sized.h, net.w, net.h, thresh, probs, boxes, 0, 1, 0, .5, 1);
         if (nms) do_nms(boxes, probs, l.w*l.h*l.n, 1, nms);
 
         char labelpath[4096];
@@ -602,11 +594,11 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
     set_batch_network(&net, 1);
     srand(2222222);
-    clock_t time;
+    double time;
     char buff[256];
     char *input = buff;
     int j;
-    float nms=.4;
+    float nms=.3;
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -628,15 +620,20 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
         float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
         for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+        float **masks = 0;
+        if (l.coords > 4){
+            masks = calloc(l.w*l.h*l.n, sizeof(float*));
+            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = calloc(l.coords-4, sizeof(float *));
+        }
 
         float *X = sized.data;
-        time=clock();
+        time=what_time_is_it_now();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, 0, 0, hier_thresh, 1);
+        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+        get_region_boxes(l, im.w, im.h, net.w, net.h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
         if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //else if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
         if(outfile){
             save_image(im, outfile);
         }
@@ -678,6 +675,11 @@ void run_detector(int argc, char **argv)
     char *net_ip = find_char_arg(argc, argv, "-address", "127.0.0.1");
     char *net_port = find_char_arg(argc, argv, "-port", "");
     char *net_protocol = find_char_arg(argc, argv, "-protocol", "ws");
+    writeVideo = find_int_arg(argc, argv, "-videoOut", 0);
+    createNamedPipe = find_int_arg(argc, argv, "-pipe", 0);
+    videoPath = find_char_arg(argc, argv, "-videoOutPath", "./output.avi");
+    showWindow = find_int_arg(argc, argv, "-showWindow", 0);
+    printf("videoPath:%s, namedPipe:%i, writeVideo:%i, showWindow:%i\n", videoPath,createNamedPipe,writeVideo,showWindow);
     comm_setup(net_ip, net_port, net_protocol);
     int *gpus = 0;
     int gpu = 0;
@@ -706,11 +708,11 @@ void run_detector(int argc, char **argv)
     int width = find_int_arg(argc, argv, "-w", 0);
     int height = find_int_arg(argc, argv, "-h", 0);
     int fps = find_int_arg(argc, argv, "-fps", 0);
+    char *filename = find_char_arg(argc, argv, "-filename", 0);
 
     char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
-    char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);

@@ -16,6 +16,10 @@
 lo_address osc_address;
 char* comm_protocol;
 wsclient *ws_client;
+int writeVideo;
+int showWindow;
+char *videoPath;
+int createNamedPipe;
 
 void comm_setup(char* ip, char* port, char* protocol);
 void osc_send_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);

@@ -1,9 +1,13 @@
+*.avi
+*.mp4
+*.weights
 *.o
 *.dSYM
 *.csv
 *.out
 *.png
 *.jpg
+*.pyc
 old/
 mnist/
 data/

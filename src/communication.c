@@ -29,10 +29,13 @@ int onopen(wsclient *c) {
 void comm_setup(char* address, char* port, char* protocol){
     comm_protocol = protocol;
     printf("using comm protocol %s\n", protocol);
-    printf("address:%s,port:%s \n",address,port);
+    printf("address:%s, port:%s \n",address,port);
     if(strcmp(protocol,"osc") == 0){
         printf("setting up osc\n");
-        if(strcmp(port,"") == 0){ port = 7770; }
+        if(strcmp(port,"") == 0){
+            port = "7770";
+            printf("defaulting to port 7770\n");
+        }
         osc_address = lo_address_new(address, port);
     }else if(strcmp(protocol,"ws") == 0){
         printf("setting up ws\n");
@@ -67,6 +70,7 @@ void comm_setup(char* address, char* port, char* protocol){
     // pick a port number for you by passing NULL as the last argument
     // t = lo_address_new_from_url( "osc.unix://localhost/tmp/mysocket" );
     // t = lo_address_new("127.0.0.1", "7770");
+    printf("comm setup done\n");
     
 }
 

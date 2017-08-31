@@ -1,21 +1,67 @@
-![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
+#darknet-net#
 
-#Darknet#
-Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
+**Extra CLI flags:**
 
-For more information see the [Darknet project website](http://pjreddie.com/darknet).
+use websocket or OSC protocol
+`-protocol osc|ws` (default: ws)
 
-For questions or issues please use the [Google Group](https://groups.google.com/forum/#!forum/darknet).
+IP or URL for your OSC/WS server
+`-address <string>` (default: ws)
+
+optional server port
+`-port <int>`
+
+whether to enable video file(streaming) output
+`-videoOut 1|0` (default: 0)
+
+filepath for video output
+`-videoOutPath <string>` (default: ./output.avi)
+
+whether the videoOutPath will be created as a [named pipe](http://www.linuxjournal.com/article/2156)
+`-pipe 1|0` (default: 0)
+
+whether to enable drawing video and detections in a window. Be aware that his eats up some fps.
+`-showWindow 1|0` (default: 0)
+
+**Note:**
+When using a named pipe, the process will get blocked until another application is connecting to the named pipe in read mode.
+After the file got created you can connect to the pipe with f.e. ffmpeg by `ffmpeg -i <path to pipe filename> output.mp4`
+Or open it in a video player like VLC.
 
 
-OSC Addition by Meso
-----------
-This version of darknet was extended by [liblo](http://liblo.sourceforge.net/) an OSC C library to send detections out via OSC.
-In addition to all the flags existing in Darknet already you have the flags -ip and -port to set the target IP address and port.
-See start-darknet for an example command to launch the application. Default port is 7770. Default IP is 127.0.0.1
-For more information on darknet itself see the [Darknet project website](http://pjreddie.com/darknet).
+**How to compile:**
 
-In addition to all the default darknet dependencies you need liblo installed on your system. An armv8 version of liblo is added to the repo, its intended for use with the Nvidia Jetson TX2.
-It's advised to delete it if you are compiling the project on a different CPU platform.
+Install libwsclient
+```
+git clone https://github.com/payden/libwsclient
+cd libwsclient
+./autogen.sh
+./configure && make && sudo make install
+```
 
-Darknet only support OSX and Linux officially, this version won't compile on windows. You can integrate the OSC additions into a windows port of darknet.
+Install liblo
+```
+wget https://github.com/radarsat1/liblo/releases/download/0.29/liblo-0.29.tar.gz
+tar xvfz liblo-0.29.tar.gz
+cd liblo-0.29
+./configure && make && sudo make install
+```
+
+Install json-c
+```
+wget https://github.com/radarsat1/liblo/releases/download/0.29/liblo-0.29.tar.gz
+tar xvfz liblo-0.29.tar.gz
+cd liblo-0.29
+./configure && make && sudo make install
+```
+
+You will need to download the weight files you want to use and install all dependencies needed by darknet.
+Follow this guide: https://pjreddie.com/darknet/install/
+For weight files: https://pjreddie.com/darknet/yolo/
+
+Compile darknet
+```
+make
+```
+
+see `start-darknet` for an example command line

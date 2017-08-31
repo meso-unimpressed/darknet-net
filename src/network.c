@@ -58,9 +58,16 @@ network load_network(char *cfg, char *weights, int clear)
     return net;
 }
 
-int get_current_batch(network net)
+network *load_network_p(char *cfg, char *weights, int clear)
 {
-    int batch_num = (*net.seen)/(net.batch*net.subdivisions);
+    network *net = calloc(1, sizeof(network));
+    *net = load_network(cfg, weights, clear);
+    return net;
+}
+
+size_t get_current_batch(network net)
+{
+    size_t batch_num = (*net.seen)/(net.batch*net.subdivisions);
     return batch_num;
 }
 
@@ -75,9 +82,30 @@ void reset_momentum(network net)
     #endif
 }
 
+void reset_network_state(network net, int b)
+{
+    int i;
+    for (i = 0; i < net.n; ++i) {
+        #ifdef GPU
+        layer l = net.layers[i];
+        if(l.state_gpu){
+            fill_gpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
+        }
+        if(l.h_gpu){
+            fill_gpu(l.outputs, 0, l.h_gpu + l.outputs*b, 1);
+        }
+        #endif
+    }
+}
+
+void reset_rnn(network *net)
+{
+    reset_network_state(*net, 0);
+}
+
 float get_current_rate(network net)
 {
-    int batch_num = get_current_batch(net);
+    size_t batch_num = get_current_batch(net);
     int i;
     float rate;
     if (batch_num < net.burn_in) return net.learning_rate * pow((float)batch_num / net.burn_in, net.power);
@@ -125,6 +153,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "rnn";
         case GRU:
             return "gru";
+        case LSTM:
+	    return "lstm";
         case CRNN:
             return "crnn";
         case MAXPOOL:
@@ -164,7 +194,8 @@ network make_network(int n)
     network net = {0};
     net.n = n;
     net.layers = calloc(net.n, sizeof(layer));
-    net.seen = calloc(1, sizeof(int));
+    net.seen = calloc(1, sizeof(size_t));
+    net.t    = calloc(1, sizeof(int));
     net.cost = calloc(1, sizeof(float));
     return net;
 }
@@ -190,12 +221,22 @@ void forward_network(network net)
 void update_network(network net)
 {
     int i;
-    int update_batch = net.batch*net.subdivisions;
-    float rate = get_current_rate(net);
+    update_args a = {0};
+    a.batch = net.batch*net.subdivisions;
+    a.learning_rate = get_current_rate(net);
+    a.momentum = net.momentum;
+    a.decay = net.decay;
+    a.adam = net.adam;
+    a.B1 = net.B1;
+    a.B2 = net.B2;
+    a.eps = net.eps;
+    ++*net.t;
+    a.t = *net.t;
+
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
         if(l.update){
-            l.update(l, update_batch, rate*l.learning_rate_scale, net.momentum, net.decay);
+            l.update(l, a);
         }
     }
 }
@@ -282,6 +323,15 @@ float train_network(network net, data d)
     return (float)sum/(n*batch);
 }
 
+void set_temp_network(network net, float t)
+{
+    int i;
+    for(i = 0; i < net.n; ++i){
+        net.layers[i].temperature = t;
+    }
+}
+
+
 void set_batch_network(network *net, int b)
 {
     net->batch = b;
@@ -291,6 +341,11 @@ void set_batch_network(network *net, int b)
 #ifdef CUDNN
         if(net->layers[i].type == CONVOLUTIONAL){
             cudnn_convolutional_setup(net->layers + i);
+        }
+        if(net->layers[i].type == DECONVOLUTIONAL){
+            layer *l = net->layers + i;
+            cudnnSetTensor4dDescriptor(l->dstTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l->out_c, l->out_h, l->out_w);
+            cudnnSetTensor4dDescriptor(l->normTensorDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 1, l->out_c, 1, 1); 
         }
 #endif
     }
@@ -438,6 +493,55 @@ float *network_predict(network net, float *input)
     forward_network(net);
     return net.output;
 }
+
+int num_boxes(network *net)
+{
+    layer l = net->layers[net->n-1];
+    return l.w*l.h*l.n;
+}
+
+box *make_boxes(network *net)
+{
+    layer l = net->layers[net->n-1];
+    box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+    return boxes;
+}
+
+float **make_probs(network *net)
+{
+    int j;
+    layer l = net->layers[net->n-1];
+    float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+    for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes + 1, sizeof(float *));
+    return probs;
+}
+
+void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, box *boxes, float **probs)
+{
+    network_predict_image(net, im);
+    layer l = net->layers[net->n-1];
+    if(l.type == REGION){
+        get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, 0, 0, 0, hier_thresh, 0);
+        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    }
+}
+
+float *network_predict_p(network *net, float *input)
+{
+    return network_predict(*net, input);
+}
+
+float *network_predict_image(network *net, image im)
+{
+    image imr = letterbox_image(im, net->w, net->h);
+    set_batch_network(net, 1);
+    float *p = network_predict(*net, imr.data);
+    free_image(imr);
+    return p;
+}
+
+int network_width(network *net){return net->w;}
+int network_height(network *net){return net->h;}
 
 matrix network_predict_data_multi(network net, data test, int n)
 {

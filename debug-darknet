@@ -1,0 +1,4 @@
+#! /bin/sh
+cd /home/nvidia/darknet-osc/
+gdb --args ./darknet detector demo cfg/voc.data cfg/yolo-voc.cfg yolo-voc.weights -c 1 -ip 192.168.96.147
+
