@@ -75,13 +75,13 @@ void *detect_in_thread(void *ptr)
     }
     if (nms > 0) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
-    printf("\033[2J");
-    printf("\033[1;1H");
+    // printf("\033[2J");
+    // printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
     image display = buff[(buff_index+2) % 3];
     if(showWindow){
-        draw_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+        draw_detections(display, demo_detections, demo_thresh, boxes, probs, 0, demo_names, demo_alphabet, demo_classes);
     }
     ws_send_detections(display, demo_detections, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
     demo_index = (demo_index + 1)%demo_frame;

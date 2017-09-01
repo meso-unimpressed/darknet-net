@@ -164,11 +164,21 @@ void ws_send_detections(image im, int num, float thresh, box *boxes, float **pro
                 
                 json_object *jprob = json_object_new_double(prob);
                 json_object_object_add(jobj,"prob", jprob);
+                if(strcmp(coordFormat,"xywh") == 0){
+                    json_object_object_add(jobj,"x", json_object_new_double(b.x));
+                    json_object_object_add(jobj,"y", json_object_new_double(b.y));
+                    json_object_object_add(jobj,"w", json_object_new_double(b.w));
+                    json_object_object_add(jobj,"h", json_object_new_double(b.h));
+                }else if(strcmp(coordFormat,"lrtb") == 0){
+                    json_object_object_add(jobj,"l", json_object_new_int(left));
+                    json_object_object_add(jobj,"r", json_object_new_int(right));
+                    json_object_object_add(jobj,"t", json_object_new_int(top));
+                    json_object_object_add(jobj,"b", json_object_new_int(bot));
+                }
 
                 json_object_array_add(jarray,jobj);
 
                 
-                // lo_message_add  (m, "sfiiii", names[class], prob*100, left, right, top, bot);
             }
         }
     libwsclient_send(ws_client, json_object_to_json_string(jarray));

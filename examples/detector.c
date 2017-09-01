@@ -675,6 +675,7 @@ void run_detector(int argc, char **argv)
     char *net_ip = find_char_arg(argc, argv, "-address", "127.0.0.1");
     char *net_port = find_char_arg(argc, argv, "-port", "");
     char *net_protocol = find_char_arg(argc, argv, "-protocol", "ws");
+    coordFormat = find_char_arg(argc, argv, "-coord", "xywh");
     writeVideo = find_int_arg(argc, argv, "-videoOut", 0);
     createNamedPipe = find_int_arg(argc, argv, "-pipe", 0);
     videoPath = find_char_arg(argc, argv, "-videoOutPath", "./output.avi");
