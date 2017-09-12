@@ -1,4 +1,5 @@
-#darknet-net#
+darknet-net
+-------------
 
 **Extra CLI flags:**
 
@@ -45,9 +46,11 @@ Or open it in a video player like VLC.
 
 **Example for the different coordinate formats:**
 xywh:
+
 ```[ { "class": "person", "prob": 0.96257078647613525, "x": 0.4973103404045105, "y": 0.53185933828353882, "w": 0.75370079278945923, "h": 0.89959228038787842 } ]```
 
 lrtb:
+
 ```[ { "class": "tvmonitor", "prob": 0.61706143617630005, "l": 311, "r": 400, "t": 151, "b": 261 }]```
 
 
@@ -71,10 +74,9 @@ cd liblo-0.29
 
 Install json-c
 ```
-wget https://github.com/radarsat1/liblo/releases/download/0.29/liblo-0.29.tar.gz
-tar xvfz liblo-0.29.tar.gz
-cd liblo-0.29
-./configure && make && sudo make install
+git clone https://github.com/json-c/json-c.git
+cd json-c
+./configure && make && make check && sudo make install
 ```
 
 You will need to download the weight files you want to use and install all dependencies needed by darknet.
