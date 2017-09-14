@@ -1,5 +1,5 @@
 darknet-net
--------------
+===========
 
 **Extra CLI flags:**
 
@@ -58,7 +58,7 @@ lrtb:
 
 Install libwsclient
 ```
-git clone https://github.com/payden/libwsclient
+git clone https://github.com/PTS93/libwsclient
 cd libwsclient
 ./autogen.sh
 ./configure && make && sudo make install
