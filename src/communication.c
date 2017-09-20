@@ -9,7 +9,7 @@ int onclose(wsclient *c) {
 int onerror(wsclient *c, wsclient_error *err) {
     fprintf(stderr, "ws onerror: (%d): %s\n", err->code, err->str);
     if(err->extra_code) {
-        errno = err->extra_code;
+        //errno = err->extra_code;
         perror("recv");
     }
     return 0;
@@ -46,7 +46,7 @@ void comm_setup(char* address, char* port, char* protocol){
             snprintf(buf, sizeof buf, "%s%s%s", address, ":", port);
             ws_client = libwsclient_new(buf);
         }
-        
+
         if(!ws_client) {
             fprintf(stderr, "Unable to initialize new WS client.\n");
             exit(1);
@@ -71,13 +71,13 @@ void comm_setup(char* address, char* port, char* protocol){
     // t = lo_address_new_from_url( "osc.unix://localhost/tmp/mysocket" );
     // t = lo_address_new("127.0.0.1", "7770");
     printf("comm setup done\n");
-    
+
 }
 
 void osc_send_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
 {
-    
-    
+
+
     // you may want to construct a bundle instead of one big message
     // lo_message m = lo_bundle_new(LO_TT_IMMEDIATE);
         lo_message m = lo_message_new();
@@ -92,7 +92,7 @@ void osc_send_detections(image im, int num, float thresh, box *boxes, float **pr
 
                 // printf("%d %s: %.0f%%\n", i, names[class], prob*100);
                 printf("%s: %.0f%%\n", names[class], prob*100);
-                
+
                 // not using color, add it to the message contructor below if you want to use it
                 // int offset = class*123457 % classes;
                 // float red = get_color(2,offset,classes);
@@ -135,7 +135,7 @@ void ws_send_detections(image im, int num, float thresh, box *boxes, float **pro
 
                 // printf("%d %s: %.0f%%\n", i, names[class], prob*100);
                 printf("%s: %.0f%%\n", names[class], prob*100);
-                
+
                 // not using color, add it to the message contructor below if you want to use it
                 // int offset = class*123457 % classes;
                 // float red = get_color(2,offset,classes);
@@ -158,10 +158,10 @@ void ws_send_detections(image im, int num, float thresh, box *boxes, float **pro
                 if(bot > im.h-1) bot = im.h-1;
 
                 json_object * jobj = json_object_new_object();
-                
+
                 json_object *jclass = json_object_new_string(names[class]);
                 json_object_object_add(jobj,"class", jclass);
-                
+
                 json_object *jprob = json_object_new_double(prob);
                 json_object_object_add(jobj,"prob", jprob);
                 if(strcmp(coordFormat,"xywh") == 0){
@@ -178,7 +178,7 @@ void ws_send_detections(image im, int num, float thresh, box *boxes, float **pro
 
                 json_object_array_add(jarray,jobj);
 
-                
+
             }
         }
     libwsclient_send(ws_client, json_object_to_json_string(jarray));

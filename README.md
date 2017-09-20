@@ -76,12 +76,16 @@ Install json-c
 ```
 git clone https://github.com/json-c/json-c.git
 cd json-c
-./configure && make && make check && sudo make install
+sh autogen.sh
+./configure
+make
+make install
 ```
 
-You will need to download the weight files you want to use and install all dependencies needed by darknet.
-Follow this guide: https://pjreddie.com/darknet/install/
-For weight files: https://pjreddie.com/darknet/yolo/
+You will need to download the weight files you want to use and install all dependencies needed by darknet. Follow this guide: https://pjreddie.com/darknet/install/
+ 
+1. (For openCV use this guide: http://docs.opencv.org/2.4/doc/tutorials/introduction/linux_install/linux_install.html)
+2. For weight files: https://pjreddie.com/darknet/yolo/
 
 Compile darknet
 ```
