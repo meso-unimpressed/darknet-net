@@ -81,8 +81,14 @@ cd json-c
 ```
 
 You will need to download the weight files you want to use and install all dependencies needed by darknet.
-Follow this guide: https://pjreddie.com/darknet/install/
+
+Follow this guide for the dependencies: https://pjreddie.com/darknet/install/
+
 For weight files: https://pjreddie.com/darknet/yolo/
+
+For some more speed improvements its also adivsed to compile with CUDNN.
+You can download the latest version including the install guide from here https://developer.nvidia.com/rdp/cudnn-download
+If you don't want to use CUDNN you can set `CUDNN=1` in the `Makefile` to `CUDNN=0`
 
 Compile darknet
 ```
