@@ -75,6 +75,7 @@ cd liblo-0.29
 Install json-c
 ```
 git clone https://github.com/json-c/json-c.git
+sh autogen.sh
 cd json-c
 ./configure && make && make check && sudo make install
 ```
