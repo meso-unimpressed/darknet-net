@@ -9,7 +9,7 @@ int onclose(wsclient *c) {
 int onerror(wsclient *c, wsclient_error *err) {
     fprintf(stderr, "ws onerror: (%d): %s\n", err->code, err->str);
     if(err->extra_code) {
-        errno = err->extra_code;
+        //errno = err->extra_code;
         perror("recv");
     }
     return 0;
