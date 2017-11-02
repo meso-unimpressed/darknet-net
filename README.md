@@ -32,12 +32,18 @@ filepath for video output
 
 whether the videoOutPath will be created as a [named pipe](http://www.linuxjournal.com/article/2156)
 
+in order to work, the name pipe should have a .avi extension, eg: "/tmp/custompipe.avi"
+
 `-pipe 1|0` (default: 0)
 
 whether to enable drawing video and detections in a window. Be aware that his eats up some fps.
 **untested!**
 
 `-showWindow 1|0` (default: 0)
+
+`-filename <path to video file>` 
+
+To run the detection on a video file and not on the webcam 
 
 **Note:**
 When using a named pipe, the process will get blocked until another application is connecting to the named pipe in read mode.
