@@ -1,6 +1,8 @@
 darknet-net
 ===========
 
+A fork of [darknet](https://github.com/pjreddie/darknet) that is able to send detection data out via either osc or websockets.
+
 **Extra CLI flags:**
 
 use websocket or OSC protocol
