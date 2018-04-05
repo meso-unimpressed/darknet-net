@@ -5,10 +5,11 @@ A fork of [darknet](https://github.com/pjreddie/darknet) that is able to send de
 
 **Extra CLI flags:**
 
-use websocket or OSC protocol
+Use websocket or OSC protocol
 sends json array when using ws, for osc it sends a message bundle to channel /darknet
 
 `-protocol osc|ws` (default: ws)
+
 
 Which format to use to describe the position of detection outline boxes.
 xywh: Specifies the xy coordinates as well as widht and height. x position, y position of top left corner, w = width, h = height. All variables are floats of 0-1.
@@ -16,36 +17,44 @@ lrtb: Specifies the position of each edge. l = left, r = right, t = top, b = bot
 
 `-coord xywh|lrtb` (default: xywh)
 
+
 IP or URL for your OSC/WS server
 
 `-address <string>` (default: ws)
 
-optional server port
+
+Optional server port
 
 `-port <int>`
 
-whether to enable video file(streaming) output
+
+Whether to enable video file(streaming) output
 
 `-videoOut 1|0` (default: 0)
 
-filepath for video output
+
+Filepath for video output
 
 `-videoOutPath <string>` (default: ./output.avi)
 
-whether the videoOutPath will be created as a [named pipe](http://www.linuxjournal.com/article/2156)
+
+Whether the videoOutPath will be created as a [named pipe](http://www.linuxjournal.com/article/2156)
 
 in order to work, the name pipe should have a .avi extension, eg: "/tmp/custompipe.avi"
 
 `-pipe 1|0` (default: 0)
 
-whether to enable drawing video and detections in a window. Be aware that his eats up some fps.
+
+Whether to enable drawing video and detections in a window. Be aware that his eats up some fps.
 **untested!**
 
 `-showWindow 1|0` (default: 0)
 
+
+To run the detection on a video file and not on the webcam.
+
 `-filename <path to video file>` 
 
-To run the detection on a video file and not on the webcam 
 
 **Note:**
 When using a named pipe, the process will get blocked until another application is connecting to the named pipe in read mode.
