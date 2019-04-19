@@ -12,6 +12,10 @@ int onerror(wsclient *c, wsclient_error *err) {
         //errno = err->extra_code;
         perror("recv");
     }
+    if(err->code == -2){
+        printf("Unable to run without network connection. Exiting");
+        exit(1);
+    }
     return 0;
 }
 
@@ -40,7 +44,11 @@ void comm_setup(char* address, char* port, char* protocol){
     }else if(strcmp(protocol,"ws") == 0){
         printf("setting up ws\n");
         if(strcmp(port,"") == 0){
-            ws_client = libwsclient_new(address);
+            if (address == "127.0.0.1"){
+                ws_client = libwsclient_new("ws://127.0.0.1");
+            }else{
+                ws_client = libwsclient_new(address);    
+            }
         }else{
             char buf[256];
             snprintf(buf, sizeof buf, "%s%s%s", address, ":", port);

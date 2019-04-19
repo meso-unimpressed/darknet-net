@@ -1,3 +1,6 @@
+libwsclient/
+json-c/
+liblo-*/
 *.avi
 *.mp4
 *.weights

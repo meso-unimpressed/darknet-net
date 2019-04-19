@@ -99,15 +99,19 @@ cd json-c
 
 You will need to download the weight files you want to use and install all dependencies needed by darknet.
 
-Follow this guide for the dependencies: https://pjreddie.com/darknet/install/
+Follow this guide for additional dependencies of the original Darknet project like CUDA (optional) and OpenCV: https://pjreddie.com/darknet/install/
 
 For weight files: https://pjreddie.com/darknet/yolo/
 
-For some more speed improvements its also adivsed to compile with CUDNN.
+In addition to plain CUDA its also adivsed to compile with CUDNN.
 You can download the latest version including the install guide from here https://developer.nvidia.com/rdp/cudnn-download
-If you don't want to use CUDNN you can set `CUDNN=1` in the `Makefile` to `CUDNN=0`
+If you want to use CUDNN you can set `CUDNN=1` in the `Makefile`
 
-Compile darknet
+By default darknet-net compiles WITHOUT CUDA and CUDNN but with OpenMP enabled. OpenMP accelerates CPU execution to a close to real-time performance on most high-end CPUs. The default should work on every plattform. CUDA will only work if you have a Nvidia GPU.
+
+You can enable or disable these options in the Makefile.
+
+Finally compile darknet
 ```
 make
 ```
