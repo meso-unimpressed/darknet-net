@@ -94,8 +94,10 @@ Install json-c
 git clone https://github.com/json-c/json-c.git
 sh autogen.sh
 cd json-c
-./configure && make && make check && sudo make install
+./autogen.sh && ./configure && make && make check && sudo make install
 ```
+
+Finally run ```sudo ldconfig``` before compiling darknet
 
 You will need to download the weight files you want to use and install all dependencies needed by darknet.
 
