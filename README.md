@@ -103,7 +103,7 @@ You will need to download the weight files you want to use and install all depen
 
 Follow this guide for additional dependencies of the original Darknet project like CUDA (optional) and OpenCV: https://pjreddie.com/darknet/install/
 
-For weight files: https://pjreddie.com/darknet/yolo/
+For weight files: https://pjreddie.com/darknet/yolov2/
 
 In addition to plain CUDA its also adivsed to compile with CUDNN.
 You can download the latest version including the install guide from here https://developer.nvidia.com/rdp/cudnn-download
